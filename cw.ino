@@ -14,7 +14,10 @@
 #define PADDLE_LEFT 6
 #define PADDLE_RIGHT 7
 
-#define LCD_OUTPUT_SIZE 20
+#define LCD_WIDTH 20
+#define LCD_HEIGHT 4
+
+#define LCD_OUTPUT_SIZE LCD_WIDTH
 
 #define MORSE_TABLE_SIZE 0b10000000
 
@@ -49,7 +52,7 @@ enum class buzzer_state_t {
 struct cw_ctx
 {
   enum paddles_state_t paddles_state = paddles_state_t::IDLE;
-  char lcd_output[LCD_OUTPUT_SIZE] = {};
+  char lcd_output[LCD_OUTPUT_SIZE];
   unsigned lcd_offset = 0;
 };
 
@@ -126,12 +129,21 @@ void task_update_lcd(void *args)
   
   LiquidCrystal lcd(LCD_RS, LCD_EN, LCD_D4, LCD_D5, LCD_D6, LCD_D7);
   
-  lcd.begin(20, 4);
+  for (int i = 0; i < LCD_OUTPUT_SIZE; i++) {
+    ctx->lcd_output[i] = ' ';
+  }
+  
+  lcd.begin(LCD_WIDTH, LCD_HEIGHT);
   lcd.print("Morse Code Decoder");
+  lcd.cursor();
 
   while (true) {
     lcd.setCursor(0, 1);
-    lcd.print(ctx->lcd_output);
+    for (uint16_t offset = (ctx->lcd_offset + 1) % LCD_OUTPUT_SIZE;
+         offset != ctx->lcd_offset;
+         offset = (offset + 1) % LCD_OUTPUT_SIZE) {
+      lcd.print(ctx->lcd_output[offset]);
+    }
     vTaskDelay(ms2ticks(50));
   }
 }
@@ -154,8 +166,8 @@ static void play_dah(uint16_t buzzer_pin)
 
 static void append_char_real(struct cw_ctx *ctx, char c)
 {
-  ctx->lcd_offset = ctx->lcd_offset % LCD_OUTPUT_SIZE;
-  ctx->lcd_output[ctx->lcd_offset++] = c;
+  ctx->lcd_output[ctx->lcd_offset] = c;
+  ctx->lcd_offset = (ctx->lcd_offset + 1) % LCD_OUTPUT_SIZE;
 }
 
 static void append_string(struct cw_ctx *ctx, const char *c)
