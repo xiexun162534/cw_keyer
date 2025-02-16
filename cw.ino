@@ -168,6 +168,9 @@ static void append_char_real(struct cw_ctx *ctx, char c)
 {
   ctx->lcd_output[ctx->lcd_offset] = c;
   ctx->lcd_offset = (ctx->lcd_offset + 1) % LCD_OUTPUT_SIZE;
+
+  // also print to serial
+  Serial.print(c);
 }
 
 static void append_string(struct cw_ctx *ctx, const char *c)
